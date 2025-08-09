@@ -1,5 +1,6 @@
 # MusicPlayerBingBong
 ### Play YouYube Music inside Peak
+Access MusicPlayer menu when holding BingBong in your inventory and pausing the game
 #### Functionality:
 - Play YouTube links synchronised among players from BingBong controlled with UI in pause menu
 - Animate BingBong mouth based on currently playing music
