@@ -272,16 +272,27 @@ namespace BingBongPlayer
         private void OnGUI()
         {
             if (Player.localPlayer == null || photonView == null) return;
-            if (GUIManager.instance?.pauseMenu?.isOpen != true) return;
 
             InitStyles();
 
-            if(!initializedStyles) return;
+            if (!initializedStyles) return;
+
+            if (GUIManager.instance?.pauseMenu?.isOpen != true)
+            {
+                if (Player.localPlayer.HasInAnySlot(BingBongItemID))
+                {
+                    GUILayout.BeginArea(new Rect(10, 10, 400, 100));
+                    GUILayout.Label("<color=#FFD700AA><b>Press [ESC] to access Music Player</b></color>", labelStyle);
+                    GUILayout.EndArea();
+                }
+                return;
+            }
             GUILayout.BeginArea(new Rect(10, 10, 400, 300), boxStyle);
             GUILayout.Label("<color=#FFD700><b>BingBong Player</b></color>", headerStyle);
 
             if (Player.localPlayer.HasInAnySlot(BingBongItemID))
             {
+                GUILayout.Label("Video Url:", labelStyle);
                 GUILayout.BeginHorizontal();
                 youtubeUrl = GUILayout.TextField(youtubeUrl, GUILayout.Width(330), GUILayout.Height(25));
                 GUILayout.Space(5);
