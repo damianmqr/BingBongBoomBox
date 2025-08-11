@@ -15,7 +15,7 @@ Access MusicPlayer menu when holding BingBong in your inventory and pausing the 
 - Add more customization options on top of just volume
 
 #### Disclaimer
-Uses YT-DLP to download and ffmpeg to convert clips, no warranties provided project is under MIT license https://mit-license.org/
+Uses YT-DLP to download and ffmpeg (LGPL 2.1 license https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html) to convert clips, no warranties provided project is under MIT license https://mit-license.org/
 
 YT-DLP repo: https://github.com/yt-dlp/yt-dlp
 

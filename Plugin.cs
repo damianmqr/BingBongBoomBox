@@ -16,7 +16,7 @@ using Zorro.Core;
 
 namespace BingBongPlayer
 {
-    [BepInPlugin("com.damianmqr.bingbongplayer", "BingBongBoomBox", "1.0.0")]
+    [BepInPlugin("com.damianmqr.bingbongplayer", "BingBongBoomBox", "1.0.2")]
     public class BingBongPlayerPlugin : BaseUnityPlugin
     {
         private static ManualLogSource? logger;
@@ -99,7 +99,8 @@ namespace BingBongPlayer
             audioSource.volume = currentVolume;
             audioSource.loop = false;
         }
-
+        private float spectrumTimer = 0f;
+        private float spectrumInterval = 0.05f;
         private void LateUpdate()
         {
             var connectedToGameServer = PhotonNetwork.Server == ServerConnection.GameServer;
@@ -142,24 +143,29 @@ namespace BingBongPlayer
 
             if (BingBong.Instance?.BingBongsVisuals != null)
             {
-                if (audioSource.isPlaying && spectrumData != null)
+                spectrumTimer += Time.deltaTime;
+                if (spectrumTimer >= spectrumInterval)
                 {
-                    audioSource.GetSpectrumData(spectrumData, 0, fftWindow);
-                    float freqResolution = AudioSettings.outputSampleRate / 2f / sampleSize;
+                    spectrumTimer = 0f;
+                    if (audioSource.isPlaying && spectrumData != null)
+                    {
+                        audioSource.GetSpectrumData(spectrumData, 0, fftWindow);
+                        float freqResolution = AudioSettings.outputSampleRate / 2f / sampleSize;
 
-                    int minIndex = Mathf.FloorToInt(vocalLow / freqResolution);
-                    int maxIndex = Mathf.CeilToInt(vocalHigh / freqResolution);
+                        int minIndex = Mathf.FloorToInt(vocalLow / freqResolution);
+                        int maxIndex = Mathf.CeilToInt(vocalHigh / freqResolution);
 
-                    float sum = 0f;
-                    for (int i = minIndex; i <= maxIndex && i < sampleSize; i++)
-                        sum += spectrumData[i];
+                        float sum = 0f;
+                        for (int i = minIndex; i <= maxIndex && i < sampleSize; i++)
+                            sum += spectrumData[i];
 
-                    float avg = sum / (maxIndex - minIndex + 1);
-                    BingBong.Instance.BingBongsVisuals.mouthOpen = Mathf.Clamp01(avg * 50f);
-                }
-                else
-                {
-                    BingBong.Instance.BingBongsVisuals.mouthOpen = 0f;
+                        float avg = sum / (maxIndex - minIndex + 1);
+                        BingBong.Instance.BingBongsVisuals.mouthOpen = Mathf.Clamp01(avg * 50f);
+                    }
+                    else
+                    {
+                        BingBong.Instance.BingBongsVisuals.mouthOpen = 0f;
+                    }
                 }
             }
         }
@@ -277,7 +283,7 @@ namespace BingBongPlayer
 
             if (!initializedStyles) return;
 
-            if (GUIManager.instance?.pauseMenu?.isOpen != true)
+            if (GUIManager.instance?.pauseMenu?.activeSelf != true)
             {
                 if (Player.localPlayer.HasInAnySlot(BingBongItemID))
                 {
@@ -380,6 +386,7 @@ namespace BingBongPlayer
         [PunRPC]
         private void RPC_PlayAudio(string url, string userId)
         {
+            logger?.LogInfo($"Got Play Audio {url} {userId}");
             if (string.IsNullOrWhiteSpace(url) || !IsValidYoutubeUrl(url)) return;
             if (debouncePlayCoroutine != null)
             {
@@ -552,6 +559,7 @@ namespace BingBongPlayer
         [PunRPC]
         private void RPC_StopAudio()
         {
+            logger?.LogInfo($"Got Stop Audio");
             if (audioSource != null)
             {
                 audioSource.Stop();
@@ -561,7 +569,8 @@ namespace BingBongPlayer
         [PunRPC]
         private void RPC_Rewind(float seconds)
         {
-            if(audioSource == null || audioSource.clip == null || seconds < 0f)
+            logger?.LogInfo($"Got Stop Rewind");
+            if (audioSource == null || audioSource.clip == null || seconds < 0f)
                 return;
             audioSource.time = Mathf.Max(0f, audioSource.time - seconds);
         }
@@ -570,6 +579,7 @@ namespace BingBongPlayer
         [PunRPC]
         private void RPC_Forward(float seconds)
         {
+            logger?.LogInfo($"Got Forward");
             if (audioSource == null || audioSource.clip == null || seconds < 0f)
                 return;
             audioSource.time = Mathf.Min(audioSource.clip.length, audioSource.time + seconds);
@@ -578,6 +588,7 @@ namespace BingBongPlayer
         [PunRPC]
         private void RPC_SyncTime(string songHash, float hostTime)
         {
+            logger?.LogInfo($"Got Sync time {songHash} ${hostTime}");
             if (!ActAsHost() && audioSource != null && audioSource.clip != null && songHash == currentSongHash)
             {
                 if (Mathf.Abs(audioSource.time - hostTime) > 1.5f && hostTime >= 0f && hostTime < audioSource.clip.length)
@@ -594,6 +605,8 @@ namespace BingBongPlayer
         [PunRPC]
         private void RPC_SyncPlaying(string songHash, bool hostIsPlaying, bool isOwner)
         {
+
+            logger?.LogInfo($"Got Sync Playing {songHash}");
             if (isOwner)
             {
                 hostHasMod = true;
